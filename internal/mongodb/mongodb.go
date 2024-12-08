@@ -2,8 +2,9 @@ package mongodb
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"os"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,45 +12,38 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var connection *MongoDBHandler
+var (
+	connection *Handler
+	once       sync.Once
+)
 
-type MongoDBHandler struct {
+type Handler struct {
 	Client   *mongo.Client
 	Database *mongo.Database
 }
 
-func Init_Mongo(uri, dbName string) error {
-	clientOptions := options.Client().ApplyURI(uri)
-
-	client, err := mongo.Connect(context.TODO(), clientOptions)
-	if err != nil {
-		return err
-	}
-
-	connection = &MongoDBHandler{
-		Client:   client,
-		Database: client.Database(dbName),
-	}
-	return nil
-}
-
-func NewMongoDBHandler() (*MongoDBHandler, error) {
-	if connection == nil {
-		err := Init_Mongo(os.Getenv("MONGO_ADDRESS"), os.Getenv("MONGO_DBNAME"))
-		if err != nil {
-			fmt.Println("Error : Can't init mongodb connection", err.Error())
+func GetMongoDBHandler() (*Handler, error) {
+	var err error
+	once.Do(func() {
+		var client *mongo.Client
+		clientOptions := options.Client().ApplyURI(os.Getenv("MONGO_ADDRESS"))
+		client, err = mongo.Connect(context.TODO(), clientOptions)
+		connection = &Handler{
+			Client:   client,
+			Database: client.Database(os.Getenv("MONGO_DBNAME")),
 		}
-	}
+	})
 
-	return connection, nil
+	return connection, err
 }
-func (handler *MongoDBHandler) Close() error {
+func (handler *Handler) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return handler.Client.Disconnect(ctx)
 }
 
-func (handler *MongoDBHandler) FindOne(collectionName string, filter interface{}, projection interface{}) *mongo.SingleResult {
+func (handler *Handler) FindOne(collectionName string, filter interface{}, projection interface{}) *mongo.SingleResult {
+
 	collection := handler.Database.Collection(collectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -59,7 +53,7 @@ func (handler *MongoDBHandler) FindOne(collectionName string, filter interface{}
 
 	return result
 }
-func (handler *MongoDBHandler) FindMany(collectionName string, filter interface{}, projection interface{}) ([]bson.M, error) {
+func (handler *Handler) FindMany(collectionName string, filter interface{}, projection interface{}) ([]bson.M, error) {
 	collection := handler.Database.Collection(collectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -69,7 +63,12 @@ func (handler *MongoDBHandler) FindMany(collectionName string, filter interface{
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer func(cursor *mongo.Cursor, ctx context.Context) {
+		err := cursor.Close(ctx)
+		if err != nil {
+			log.Println(err)
+		}
+	}(cursor, ctx)
 
 	var results []bson.M
 	for cursor.Next(ctx) {
@@ -88,7 +87,7 @@ func (handler *MongoDBHandler) FindMany(collectionName string, filter interface{
 	return results, nil
 }
 
-func (handler *MongoDBHandler) Insert(collectionName string, document interface{}) (*mongo.InsertOneResult, error) {
+func (handler *Handler) Insert(collectionName string, document interface{}) (*mongo.InsertOneResult, error) {
 	collection := handler.Database.Collection(collectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -100,7 +99,7 @@ func (handler *MongoDBHandler) Insert(collectionName string, document interface{
 
 	return result, nil
 }
-func (handler *MongoDBHandler) Update(collectionName string, filter interface{}, update interface{}) (*mongo.UpdateResult, error) {
+func (handler *Handler) Update(collectionName string, filter interface{}, update interface{}) (*mongo.UpdateResult, error) {
 	collection := handler.Database.Collection(collectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -112,7 +111,7 @@ func (handler *MongoDBHandler) Update(collectionName string, filter interface{},
 
 	return result, nil
 }
-func (handler *MongoDBHandler) Delete(collectionName string, filter interface{}) (*mongo.DeleteResult, error) {
+func (handler *Handler) Delete(collectionName string, filter interface{}) (*mongo.DeleteResult, error) {
 	collection := handler.Database.Collection(collectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

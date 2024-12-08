@@ -31,7 +31,7 @@ func Register(ctx *gin.Context) (map[string]interface{}, error) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "status": false})
 		return nil, err
 	}
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -93,7 +93,7 @@ func Login(ctx *gin.Context) (map[string]interface{}, error) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return nil, err
 	}
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -151,7 +151,7 @@ func Verify(ctx *gin.Context) (gin.H, error) {
 	var result schema.UserInfo
 	userIdObj, _ := primitive.ObjectIDFromHex(userId)
 	sessionIdObj, _ := primitive.ObjectIDFromHex(sessionId)
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		return nil, errors.New("verification failed")
 	}

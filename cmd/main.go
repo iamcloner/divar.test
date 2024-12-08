@@ -2,7 +2,6 @@ package main
 
 import (
 	"divar.ir/api/routers"
-	"divar.ir/internal/mongodb"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -22,7 +21,6 @@ func main() {
 	}
 	serv := gin.Default()
 
-	err = mongodb.Init_Mongo(os.Getenv("MONGO_ADDRESS"), os.Getenv("MONGO_DBNAME"))
 	if err != nil {
 		panic("Failed to connect mongodb")
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 func GetPosts(ctx *gin.Context, areaCode string, categoryCode string) ([]bson.M, error) {
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Operation Failed (0x0001)"})

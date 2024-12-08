@@ -13,7 +13,7 @@ func IncludeCities(router *gin.Engine) {
 		citiesRouter.GET("/test", func(ctx *gin.Context) { ctx.JSON(200, gin.H{"test": "Cities"}) })
 		citiesRouter.GET("/", func(ctx *gin.Context) {
 
-			handler, err := mongodb.NewMongoDBHandler()
+			handler, err := mongodb.GetMongoDBHandler()
 
 			if err != nil {
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Operation Failed (0x0001)"})

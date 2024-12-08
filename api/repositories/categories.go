@@ -9,7 +9,7 @@ import (
 )
 
 func GetCategories(ctx *gin.Context, code string) (interface{}, error) {
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Operation Failed (0x0001)"})

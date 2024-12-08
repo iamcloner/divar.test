@@ -12,7 +12,7 @@ import (
 )
 
 func OpenSession(userId primitive.ObjectID, sessionInfo schema.Session) error {
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -24,7 +24,7 @@ func OpenSession(userId primitive.ObjectID, sessionInfo schema.Session) error {
 }
 
 func GetSessions(userId primitive.ObjectID) ([]interface{}, error) {
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -41,7 +41,7 @@ func GetSessions(userId primitive.ObjectID) ([]interface{}, error) {
 	return sessions, err
 }
 func CloseSession(userId primitive.ObjectID, sessionId primitive.ObjectID) error {
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -72,7 +72,7 @@ func updateSessions(userId primitive.ObjectID, sessions []interface{}) (primitiv
 	return newSession, nil
 }
 func GetSession(userId primitive.ObjectID, sessionId primitive.ObjectID) (schema.Session, error) {
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 		return schema.Session{}, err
@@ -85,7 +85,7 @@ func GetSession(userId primitive.ObjectID, sessionId primitive.ObjectID) (schema
 	return result.ActiveSessions[0], err
 }
 func AddToInactiveSessions(userId primitive.ObjectID, sessionInfo schema.Session) error {
-	handler, err := mongodb.NewMongoDBHandler()
+	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
