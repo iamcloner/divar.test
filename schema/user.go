@@ -13,7 +13,6 @@ type Session struct {
 	OpenTime     time.Time          `json:"-" form:"-" bson:"openTime"`
 	Platform     string             `json:"-" form:"-" bson:"platform"`
 	LastActivity time.Time          `json:"-" form:"-" bson:"lastActivity"`
-	Status       int                `json:"-" form:"-" bson:"status"`
 }
 
 type Login struct {
@@ -21,17 +20,20 @@ type Login struct {
 	Password         string `json:"password" form:"password" binding:"required,min=8,max=26" bson:"password"`
 	IsAdmin          bool   `json:"-" form:"-" bson:"isAdmin"`
 	IsVerified       bool   `json:"-" form:"-" bson:"isVerified"`
+	IsLocked         bool   `json:"-" form:"-" bson:"isLocked"`
+	IsBanned         bool   `json:"-" form:"-" bson:"isBanned"`
 	VerificationCode string `json:"-" form:"-" bson:"verificationCode"`
 }
 
 type UserInfo struct {
 	Id               primitive.ObjectID `json:"-" form:"-" bson:"_id"`
+	Status           bool               `json:"-" form:"-" bson:"status"`
 	Name             string             `json:"name" form:"name" binding:"required,min=5,max=16" bson:"name"`
 	Email            string             `json:"email" form:"email" binding:"required,email" bson:"email"`
 	Birthday         time.Time          `json:"birthday" form:"birthday" binding:"required" bson:"birthday"`
 	Address          string             `json:"address" form:"address" binding:"required,min=5,max=60" bson:"address"`
 	Country          string             `json:"country" form:"country" binding:"required,min=3,max=30" bson:"country"`
-	LoginInfo        Login              `json:"login" form:"login" binding:"required" bson:"loginInfo" bson:"loginInfo"`
+	LoginInfo        Login              `json:"-" form:"login" binding:"required" bson:"loginInfo" bson:"loginInfo"`
 	RegisterTime     time.Time          `json:"-" form:"-" bson:"registerTime"`
 	Image            string             `json:"-" form:"-" bson:"image"`
 	ActiveSessions   []Session          `json:"-" form:"-" bson:"activeSessions"`

@@ -2,7 +2,10 @@ package userApis
 
 import (
 	"divar.ir/api/repositories/userRepositories"
+	"divar.ir/internal/email"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"strings"
 )
 
 func IncludeProfile(router *gin.RouterGroup) {
@@ -13,15 +16,117 @@ func IncludeProfile(router *gin.RouterGroup) {
 			userId, exist := ctx.Get("userId")
 			if !exist {
 				ctx.JSON(401, "Authentication Required")
+				return
 			}
 			userIdStr := userId.(string)
 			profile, err := userRepositories.GetProfile(userIdStr)
 			if err != nil {
 				ctx.JSON(500, err.Error())
+				return
 			}
 			ctx.JSON(200, profile)
 		})
+		profileRouter.POST("/updateName", func(ctx *gin.Context) {
 
+			userId, exist := ctx.Get("userId")
+			if !exist {
+				ctx.JSON(401, "Authentication Required")
+				return
+			}
+			userIdObj, err := primitive.ObjectIDFromHex(userId.(string))
+			if err != nil {
+				ctx.JSON(401, "Authentication Failed")
+				return
+			}
+			newName, exist := ctx.GetPostForm("newName")
+			if !exist {
+				ctx.JSON(400, "wrong Input")
+				return
+			}
+			if len(newName) < 5 || len(newName) > 16 {
+				ctx.JSON(400, "Name must between 5 and 16 characters")
+				return
+			}
+			err = userRepositories.UpdateProfileName(userIdObj, newName)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			ctx.JSON(200, "name updated successfully")
+		})
+		profileRouter.POST("/updateEmail", func(ctx *gin.Context) {
+
+			userId, exist := ctx.Get("userId")
+			if !exist {
+				ctx.JSON(401, "Authentication Required")
+				return
+			}
+			userIdObj, err := primitive.ObjectIDFromHex(userId.(string))
+			if err != nil {
+				ctx.JSON(401, "Authentication Failed")
+				return
+			}
+			oldEmail, exist := ctx.GetPostForm("oldEmail")
+			if !exist || strings.Count(oldEmail, "@") > 1 {
+				ctx.JSON(400, "wrong Input")
+				return
+			}
+
+			err = userRepositories.UpdateProfileEmail(userIdObj, oldEmail)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			ctx.JSON(200, "enter code.check your Email.")
+		})
+		profileRouter.POST("/confirmUpdateEmail", func(ctx *gin.Context) {
+
+			userId, exist := ctx.Get("userId")
+			if !exist {
+				ctx.JSON(401, "Authentication Required")
+				return
+			}
+			userIdObj, err := primitive.ObjectIDFromHex(userId.(string))
+			if err != nil {
+				ctx.JSON(401, "Authentication Failed")
+				return
+			}
+			verifyCode, exist := ctx.GetPostForm("verifyCode")
+			if !exist || len(verifyCode) != 5 {
+				ctx.JSON(400, "wrong Input")
+				return
+			}
+			newEmail, exist := ctx.GetPostForm("newEmail")
+			if !exist || !email.IsVail(newEmail) {
+				ctx.JSON(400, "wrong Input")
+				return
+			}
+
+			err = userRepositories.ConfirmUpdateProfileEmail(userIdObj, verifyCode, newEmail)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			ctx.JSON(200, "email updated successfully.")
+		})
+		profileRouter.POST("/updateAvatar", func(ctx *gin.Context) {
+
+			ctx.JSON(200, "profile")
+		})
+		profileRouter.GET("/delete", func(ctx *gin.Context) {
+			userId, exist := ctx.Get("userId")
+			if !exist {
+				ctx.JSON(401, "Authentication Required")
+				return
+			}
+			userIdStr := userId.(string)
+			profile, err := userRepositories.GetProfile(userIdStr)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			ctx.JSON(200, profile)
+		})
 	}
 
 }

@@ -101,7 +101,6 @@ func Login(ctx *gin.Context, id string, verfied bool) (schema.Session, error) {
 	ip := ctx.ClientIP()
 	platform := ctx.GetHeader("user-agent")
 
-	session.Status = 1
 	session.IP = ip
 	session.Platform = platform
 	session.OpenTime = time.Now()

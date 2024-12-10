@@ -2,8 +2,11 @@ package email
 
 import (
 	"gopkg.in/gomail.v2"
+	"net"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -23,4 +26,23 @@ func SendMail(wg *sync.WaitGroup, to string, subject string, content string) err
 	}
 
 	return nil
+}
+func IsVail(email string) bool {
+	regex := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	re := regexp.MustCompile(regex)
+	if !re.MatchString(email) {
+		return false
+	}
+	at := strings.LastIndex(email, "@")
+	if at == -1 {
+		return false
+	}
+	domain := email[at+1:]
+
+	// Perform DNS lookup for MX records
+	mxRecords, err := net.LookupMX(domain)
+	if err != nil || len(mxRecords) == 0 {
+		return false
+	}
+	return true
 }

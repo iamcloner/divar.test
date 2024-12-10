@@ -59,6 +59,7 @@ func Register(ctx *gin.Context) (map[string]interface{}, error) {
 	registerInfo.RegisterTime = time.Now()
 	registerInfo.ActiveSessions = make([]schema.Session, 0)
 	registerInfo.InactiveSessions = make([]schema.Session, 0)
+	registerInfo.Status = true
 
 	registerInfo.Image = "http://divar.test/userImages/defult_user_profile.png"
 	result, err := handler.Insert("users", registerInfo)
@@ -106,6 +107,16 @@ func Login(ctx *gin.Context) (map[string]interface{}, error) {
 	if !password.Check(user.Password, result.LoginInfo.Password) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"status": false, "error": "Invalid email or password"})
 		return nil, err
+	}
+	if !result.Status {
+		if result.LoginInfo.IsLocked {
+			return nil, errors.New("your account is locked")
+		}
+		if result.LoginInfo.IsBanned {
+			return nil, errors.New("your account is Banned")
+		} else {
+			return nil, errors.New("your account maybe deleted")
+		}
 	}
 	var session schema.Session
 	if result.LoginInfo.IsVerified {
@@ -155,9 +166,19 @@ func Verify(ctx *gin.Context) (gin.H, error) {
 	if err != nil {
 		return nil, errors.New("verification failed")
 	}
-	err = handler.FindOne("users", bson.M{"_id": userIdObj}, bson.M{"loginInfo": 1}).Decode(&result)
+	err = handler.FindOne("users", bson.M{"_id": userIdObj}, bson.M{"loginInfo": 1, "status": 1}).Decode(&result)
 	if err != nil {
 		return nil, errors.New("verification failed")
+	}
+	if !result.Status {
+		if result.LoginInfo.IsLocked {
+			return nil, errors.New("your account is locked")
+		}
+		if result.LoginInfo.IsBanned {
+			return nil, errors.New("your account is Banned")
+		} else {
+			return nil, errors.New("your account maybe deleted")
+		}
 	}
 	if result.LoginInfo.VerificationCode != verifyCode {
 		return nil, errors.New("invalid verify code")
@@ -196,6 +217,7 @@ func Refresh(ctx *gin.Context) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, errors.New("invalid refresh token")
 	}
+
 	expAccessToken, _ := strconv.ParseFloat(os.Getenv("JWT_EXP"), 64)
 	if time.Now().Sub(sessionInfo.LastActivity).Hours() < expAccessToken {
 		return nil, errors.New("token not expired")
@@ -234,7 +256,6 @@ func Logout(ctx *gin.Context) error {
 	if err != nil {
 		return errors.New("invalid access token")
 	}
-	session.Status = 0
 	session.LastActivity = time.Now()
 	err = sessions_manager.CloseSession(userIdObj, sessionIdObj)
 	if err != nil {
