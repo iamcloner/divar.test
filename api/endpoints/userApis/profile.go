@@ -26,7 +26,7 @@ func IncludeProfile(router *gin.RouterGroup) {
 			}
 			ctx.JSON(200, profile)
 		})
-		profileRouter.POST("/updateName", func(ctx *gin.Context) {
+		profileRouter.PUT("/updateName", func(ctx *gin.Context) {
 
 			userId, exist := ctx.Get("userId")
 			if !exist {
@@ -54,7 +54,7 @@ func IncludeProfile(router *gin.RouterGroup) {
 			}
 			ctx.JSON(200, "name updated successfully")
 		})
-		profileRouter.POST("/updateEmail", func(ctx *gin.Context) {
+		profileRouter.PUT("/updateEmail", func(ctx *gin.Context) {
 
 			userId, exist := ctx.Get("userId")
 			if !exist {
@@ -79,7 +79,7 @@ func IncludeProfile(router *gin.RouterGroup) {
 			}
 			ctx.JSON(200, "enter code.check your Email.")
 		})
-		profileRouter.POST("/confirmUpdateEmail", func(ctx *gin.Context) {
+		profileRouter.PATCH("/confirmUpdateEmail", func(ctx *gin.Context) {
 
 			userId, exist := ctx.Get("userId")
 			if !exist {
@@ -91,7 +91,7 @@ func IncludeProfile(router *gin.RouterGroup) {
 				ctx.JSON(401, "Authentication Failed")
 				return
 			}
-			verifyCode, exist := ctx.GetPostForm("verifyCode")
+			verifyCode, exist := ctx.GetPostForm("code")
 			if !exist || len(verifyCode) != 5 {
 				ctx.JSON(400, "wrong Input")
 				return
@@ -119,14 +119,42 @@ func IncludeProfile(router *gin.RouterGroup) {
 				ctx.JSON(401, "Authentication Required")
 				return
 			}
-			userIdStr := userId.(string)
-			profile, err := userRepositories.GetProfile(userIdStr)
+			userIdObj, err := primitive.ObjectIDFromHex(userId.(string))
+			if err != nil {
+				ctx.JSON(401, "Authentication Failed")
+				return
+			}
+			err = userRepositories.DeleteProfile(userIdObj)
 			if err != nil {
 				ctx.JSON(500, err.Error())
 				return
 			}
-			ctx.JSON(200, profile)
+			ctx.JSON(200, "enter code.check your Email.")
 		})
+		profileRouter.PATCH("/confirmDelete", func(ctx *gin.Context) {
+			userId, exist := ctx.Get("userId")
+			if !exist {
+				ctx.JSON(401, "Authentication Required")
+				return
+			}
+			verifyCode, exist := ctx.GetPostForm("code")
+			if !exist || len(verifyCode) != 5 {
+				ctx.JSON(400, "wrong Input")
+				return
+			}
+			userIdObj, err := primitive.ObjectIDFromHex(userId.(string))
+			if err != nil {
+				ctx.JSON(401, "Authentication Failed")
+				return
+			}
+			err = userRepositories.ConfirmDeleteProfile(userIdObj, verifyCode)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			ctx.JSON(200, "successfully deleted.")
+		})
+
 	}
 
 }

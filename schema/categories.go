@@ -7,10 +7,11 @@ type Filters struct {
 }
 
 type Subs struct {
-	Code    int16     `json:"code"`
-	Name    string    `json:"name"`
-	Enable  bool      `json:"enable"`
-	Filters []Filters `json:"filters"`
+	Code     int16     `json:"code"`
+	Name     string    `json:"name"`
+	Enable   bool      `json:"enable"`
+	Filters  []Filters `json:"filters"`
+	Requires []string  `json:"requires"`
 }
 
 type Categories struct {

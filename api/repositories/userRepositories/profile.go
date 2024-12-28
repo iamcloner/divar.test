@@ -98,3 +98,46 @@ func ConfirmUpdateProfileEmail(userId primitive.ObjectID, verifyCode string, new
 	}
 	return nil
 }
+func ConfirmDeleteProfile(userId primitive.ObjectID, verifyCode string) error {
+	verifyCodeRedis, err := redis.Get(userId.Hex() + "-deleteAccount")
+	if err != nil {
+		return errors.New("code has been expired")
+	}
+	if verifyCodeRedis != verifyCode {
+		return errors.New("invalid code")
+	}
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("internal server error")
+	}
+	_, err = handler.Delete("users", bson.M{"_id": userId})
+	if err != nil {
+		return errors.New("delete account failed")
+	}
+	return nil
+}
+func DeleteProfile(userId primitive.ObjectID) error {
+	var result schema.UserInfo
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("internal server error")
+	}
+	err = handler.FindOne("users", bson.M{"_id": userId}, bson.M{"email": 1, "status": 1, "loginInfo.isLocked": 1, "loginInfo.isBanned": 1}).Decode(&result)
+	if err != nil {
+		return errors.New("invalid account")
+	}
+	verifyCode := strconv.Itoa(rand.Intn(90000) + 10000)
+	err = redis.Set(userId.Hex()+"-deleteAccount", verifyCode, 10*time.Minute)
+	if err != nil {
+		return errors.New("failed to delete account")
+	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		err := email.SendMail(&wg, result.Email, "Verify Your Account", "Your Verification Code is "+verifyCode)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
+	return nil
+}

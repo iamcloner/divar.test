@@ -11,6 +11,7 @@ func IncludeUserRouters(router *gin.Engine) {
 	{
 		userRouter.Use(middleware.UserAuthentication())
 		userApis.IncludeProfile(userRouter)
+		userApis.IncludePost(userRouter)
 	}
 
 }
