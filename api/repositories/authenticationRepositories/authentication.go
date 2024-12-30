@@ -1,4 +1,4 @@
-package repositories
+package authenticationRepositories
 
 import (
 	"divar.ir/internal/email"

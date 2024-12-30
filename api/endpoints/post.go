@@ -1,7 +1,7 @@
 package endpoints
 
 import (
-	"divar.ir/api/repositories"
+	"divar.ir/api/repositories/postsRepositories"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,7 +11,7 @@ func IncludePost(router *gin.Engine) {
 		postsRouter.GET("/test", func(ctx *gin.Context) { ctx.JSON(200, gin.H{"test": "posts"}) })
 		postsRouter.GET("/:id", func(ctx *gin.Context) {
 			id := ctx.Param("id")
-			result, err := repositories.GetPost(ctx, id)
+			result, err := postsRepositories.GetPost(ctx, id)
 			if err != nil {
 				return
 			}
@@ -20,7 +20,7 @@ func IncludePost(router *gin.Engine) {
 
 		postsRouter.GET("/:id/phone", func(ctx *gin.Context) {
 			id := ctx.Param("id")
-			result, err := repositories.GetPostPhone(ctx, id)
+			result, err := postsRepositories.GetPostPhone(ctx, id)
 			if err != nil {
 				return
 			}

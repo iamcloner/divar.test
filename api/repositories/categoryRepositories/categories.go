@@ -1,4 +1,4 @@
-package repositories
+package categoryRepositories
 
 import (
 	"divar.ir/internal/mongodb"
@@ -40,9 +40,9 @@ func GetCategories(code int) (interface{}, error) {
 				return nil, errors.New("operation Failed")
 			}
 
-			//tmp = (tmp["subs"].(bson.A)[0]).(bson.M)
-			//tmp["code"] = cat*100 + sub
-			return tmp["subs"], nil
+			tmp = (tmp["subs"].(bson.A)[0]).(bson.M)
+			tmp["code"] = cat*100 + sub
+			return tmp, nil
 		}
 	}
 

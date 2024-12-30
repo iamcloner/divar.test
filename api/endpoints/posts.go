@@ -1,7 +1,7 @@
 package endpoints
 
 import (
-	"divar.ir/api/repositories"
+	"divar.ir/api/repositories/postsRepositories"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,7 +12,7 @@ func IncludePosts(router *gin.Engine) {
 		postsRouter.GET("/", func(ctx *gin.Context) {
 			areaCode := ctx.Query("areaCode")
 			categoryCode := ctx.Query("categoryCode")
-			result, err := repositories.GetPosts(ctx, areaCode, categoryCode)
+			result, err := postsRepositories.GetPosts(ctx, areaCode, categoryCode)
 			if err != nil {
 				return
 			}

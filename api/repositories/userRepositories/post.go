@@ -1,7 +1,6 @@
 package userRepositories
 
 import (
-	"divar.ir/api/repositories"
 	"divar.ir/internal/mongodb"
 	"divar.ir/schema"
 	"errors"
@@ -30,17 +29,5 @@ func AddPost(userId primitive.ObjectID, post schema.Posts) error {
 	if err != nil {
 		return errors.New("nothing found")
 	}
-	return nil
-}
-func CheckPostRequirements(post schema.Posts) error {
-	if post.CategoryCode == 0 {
-		return errors.New("category code is required")
-	}
-	result, err := repositories.GetCategories(post.CategoryCode)
-	if err != nil {
-		return errors.New("invalid Category code")
-	}
-
-	println(result)
 	return nil
 }

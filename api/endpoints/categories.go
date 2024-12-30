@@ -1,7 +1,7 @@
 package endpoints
 
 import (
-	"divar.ir/api/repositories"
+	"divar.ir/api/repositories/categoryRepositories"
 	"github.com/gin-gonic/gin"
 	"strconv"
 )
@@ -11,7 +11,7 @@ func IncludeCategories(router *gin.Engine) {
 	{
 		categoriesRouter.GET("/test", func(ctx *gin.Context) { ctx.JSON(200, gin.H{"test": "categories"}) })
 		categoriesRouter.GET("/", func(ctx *gin.Context) {
-			result, err := repositories.GetCategories(0)
+			result, err := categoryRepositories.GetCategories(0)
 			if err != nil {
 				ctx.JSON(500, err.Error())
 				return
@@ -24,7 +24,7 @@ func IncludeCategories(router *gin.Engine) {
 				ctx.JSON(500, "invalid code")
 				return
 			}
-			result, err := repositories.GetCategories(code)
+			result, err := categoryRepositories.GetCategories(code)
 			if err != nil {
 				ctx.JSON(500, err.Error())
 				return

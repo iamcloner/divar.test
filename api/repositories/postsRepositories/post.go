@@ -1,4 +1,4 @@
-package repositories
+package postsRepositories
 
 import (
 	"divar.ir/internal/mongodb"

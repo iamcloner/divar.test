@@ -46,7 +46,7 @@ func IncludePost(router *gin.RouterGroup) {
 				ctx.JSON(http.StatusBadRequest, "Invalid inputs")
 				return
 			}
-			err = userRepositories.CheckPostRequirements(postInfo)
+			err = postInfo.Validate()
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, err.Error())
 				return
