@@ -30,6 +30,7 @@ type UserInfo struct {
 	Status           bool               `json:"-" form:"-" bson:"status"`
 	Name             string             `json:"name" form:"name" binding:"required,min=5,max=16" bson:"name"`
 	Email            string             `json:"email" form:"email" binding:"required,email" bson:"email"`
+	IsAdmin          bool               `json:"-" form:"-" bson:"isAdmin"`
 	Birthday         time.Time          `json:"birthday" form:"birthday" binding:"required" bson:"birthday"`
 	Address          string             `json:"address" form:"address" binding:"required,min=5,max=60" bson:"address"`
 	Country          string             `json:"country" form:"country" binding:"required,min=3,max=30" bson:"country"`

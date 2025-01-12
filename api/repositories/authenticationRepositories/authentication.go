@@ -60,6 +60,7 @@ func Register(ctx *gin.Context) (map[string]interface{}, error) {
 	registerInfo.ActiveSessions = make([]schema.Session, 0)
 	registerInfo.InactiveSessions = make([]schema.Session, 0)
 	registerInfo.Status = true
+	registerInfo.IsAdmin = false
 
 	registerInfo.Image = "http://divar.test/userImages/defult_user_profile.png"
 	result, err := handler.Insert("users", registerInfo)
@@ -76,7 +77,7 @@ func Register(ctx *gin.Context) (map[string]interface{}, error) {
 		}
 	}()
 	var session schema.Session
-	session, err = jwt.Login(ctx, result.InsertedID.(primitive.ObjectID).Hex(), false)
+	session, err = jwt.Login(ctx, result.InsertedID.(primitive.ObjectID).Hex(), false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -120,12 +121,12 @@ func Login(ctx *gin.Context) (map[string]interface{}, error) {
 	}
 	var session schema.Session
 	if result.LoginInfo.IsVerified {
-		session, err = jwt.Login(ctx, result.Id.Hex(), true)
+		session, err = jwt.Login(ctx, result.Id.Hex(), true, result.IsAdmin)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		session, err = jwt.Login(ctx, result.Id.Hex(), false)
+		session, err = jwt.Login(ctx, result.Id.Hex(), false, result.IsAdmin)
 		if err != nil {
 			return nil, err
 		}
@@ -191,7 +192,7 @@ func Verify(ctx *gin.Context) (gin.H, error) {
 	if err != nil {
 		return nil, errors.New("cannot generate new token")
 	}
-	session, err := jwt.Login(ctx, userId, true)
+	session, err := jwt.Login(ctx, userId, true, false)
 	if err != nil {
 		return nil, errors.New("cannot generate new token")
 	}
@@ -213,7 +214,7 @@ func Refresh(ctx *gin.Context) (map[string]interface{}, error) {
 	}
 	userIdObj, _ := primitive.ObjectIDFromHex(userId)
 	sessionIdObj, _ := primitive.ObjectIDFromHex(sessionId)
-	sessionInfo, err := sessions_manager.GetSession(userIdObj, sessionIdObj)
+	sessionInfo, isAdmin, err := sessions_manager.GetSession(userIdObj, sessionIdObj)
 	if err != nil {
 		return nil, errors.New("invalid refresh token")
 	}
@@ -228,7 +229,7 @@ func Refresh(ctx *gin.Context) (map[string]interface{}, error) {
 	}
 
 	openTime := sessionInfo.OpenTime
-	sessionInfo, _ = jwt.Login(ctx, userId, true)
+	sessionInfo, _ = jwt.Login(ctx, userId, true, isAdmin)
 	sessionInfo.ID = sessionIdObj
 	sessionInfo.OpenTime = openTime
 	err = sessions_manager.OpenSession(userIdObj, sessionInfo)
@@ -252,7 +253,7 @@ func Logout(ctx *gin.Context) error {
 
 	userIdObj, _ := primitive.ObjectIDFromHex(userId)
 	sessionIdObj, _ := primitive.ObjectIDFromHex(sessionId)
-	session, err := sessions_manager.GetSession(userIdObj, sessionIdObj)
+	session, isAdmin, err := sessions_manager.GetSession(userIdObj, sessionIdObj)
 	if err != nil {
 		return errors.New("invalid access token")
 	}
@@ -265,7 +266,11 @@ func Logout(ctx *gin.Context) error {
 	if err != nil {
 		return err
 	}
-	err = redis.Del(sessionId + "-rid")
+	if isAdmin {
+		err = redis.Del(sessionId + "-admin-rid")
+	} else {
+		err = redis.Del(sessionId + "-user-rid")
+	}
 	if err != nil {
 		return errors.New("logout failed")
 	}

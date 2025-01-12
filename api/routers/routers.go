@@ -13,4 +13,5 @@ func IncludeRouters(router *gin.Engine) {
 	endpoints.IncludeAuthentication(router)
 
 	IncludeUserRouters(router)
+	IncludeAdminRouters(router)
 }

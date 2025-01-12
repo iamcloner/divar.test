@@ -2,6 +2,7 @@ package schema
 
 import (
 	"divar.ir/api/repositories/categoryRepositories"
+	"divar.ir/api/repositories/postsRepositories"
 	"divar.ir/internal/listPicker"
 	"errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,6 +21,10 @@ type Price struct {
 type Posts struct {
 	ID           primitive.ObjectID `json:"id" form:"-" bson:"_id,omitempty"`
 	UserId       primitive.ObjectID `json:"userId" form:"userId" bson:"userId"`
+	Status       string             `json:"-" form:"-" bson:"status" validate:"required"`
+	LastAction   string             `json:"-" form:"-" bson:"lastAction" validate:"required"`
+	CreatedAt    time.Time          `json:"-" form:"-" bson:"createdAt" validate:"required"`
+	UpdatedAt    time.Time          `json:"-" form:"-" bson:"updatedAt" validate:"required"`
 	Title        string             `json:"title" form:"title" bson:"title" validate:"required"`
 	Description  string             `json:"description" form:"description" bson:"description" validate:"required"`
 	CategoryCode int                `json:"categoryCode" form:"categoryCode" bson:"categoryCode" validate:"required"`
@@ -105,6 +110,13 @@ func (p Posts) Validate() error {
 	if p.CategoryCode == 0 {
 		return errors.New("category code is required")
 	}
+	if p.AreaCode == 0 {
+		return errors.New("area code is required")
+	}
+	if p.AreaCode < 100000 && !postsRepositories.AreaCodeExist(p.AreaCode) {
+		return errors.New("area code does not exist")
+	}
+
 	result, err := categoryRepositories.GetCategories(p.CategoryCode)
 	if err != nil {
 		return errors.New("invalid Category code")

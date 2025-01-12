@@ -68,7 +68,7 @@ func Validate(tokenString string) (uid string, sid string, rid string, tokenType
 		return "", "", "", "", jwt.ErrTokenUnverifiable
 	}
 }
-func Login(ctx *gin.Context, id string, verfied bool) (schema.Session, error) {
+func Login(ctx *gin.Context, id string, verfied bool, isAdmin bool) (schema.Session, error) {
 	var session schema.Session
 	expAccessToken, _ := strconv.Atoi(os.Getenv("JWT_EXP"))
 	expRefreshToken, _ := strconv.Atoi(os.Getenv("JWT_REF_EXP"))
@@ -107,7 +107,13 @@ func Login(ctx *gin.Context, id string, verfied bool) (schema.Session, error) {
 	session.LastActivity = time.Now()
 	session.AccessToken = accessToken
 	session.RefreshToken = refreshToken
-	err = redis.Set(session.ID.Hex()+"-rid", rid, time.Duration(expAccessToken)*time.Minute)
+	if isAdmin {
+		err = redis.Set(session.ID.Hex()+"-admin-rid", rid, time.Duration(expAccessToken)*time.Minute)
+
+	} else {
+		err = redis.Set(session.ID.Hex()+"-user-rid", rid, time.Duration(expAccessToken)*time.Minute)
+	}
+
 	if err != nil {
 		return schema.Session{}, err
 	}

@@ -42,7 +42,7 @@ func GetPosts(ctx *gin.Context, areaCode string, categoryCode string) ([]bson.M,
 
 	if categoryCode == "" {
 		var result []bson.M
-		result, err := handler.FindMany("posts", bson.M{"area-code": bson.M{"$gte": areaCodeHigh, "$lte": areaCodeLow}},
+		result, err := handler.FindMany("posts", bson.M{"areaCode": bson.M{"$gte": areaCodeHigh, "$lte": areaCodeLow}, "status": "Confirmed"},
 			bson.M{"title": 1, "images": 1, "area-code": 1, "price": 1, "used": 1})
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Operation Failed (0x0002)"})
@@ -65,8 +65,8 @@ func GetPosts(ctx *gin.Context, areaCode string, categoryCode string) ([]bson.M,
 
 		var result []bson.M
 		result, err = handler.FindMany("posts", bson.M{
-			"area-code":     bson.M{"$gte": areaCodeHigh, "$lte": areaCodeLow},
-			"category-code": bson.M{"$gte": cateCodeHigh, "$lte": cateCodeLow}},
+			"areaCode":     bson.M{"$gte": areaCodeHigh, "$lte": areaCodeLow},
+			"categoryCode": bson.M{"$gte": cateCodeHigh, "$lte": cateCodeLow}, "status": "confirmed"},
 			bson.M{"title": 1, "images": 1, "area-code": 1, "price": 1, "used": 1})
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Operation Failed (0x0002)"})

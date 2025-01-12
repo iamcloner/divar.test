@@ -6,6 +6,7 @@ import (
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 func GetMyPosts(userId primitive.ObjectID) (posts []bson.M, err error) {
@@ -19,13 +20,46 @@ func GetMyPosts(userId primitive.ObjectID) (posts []bson.M, err error) {
 	}
 	return result, nil
 }
-func AddPost(userId primitive.ObjectID, post schema.Posts) error {
+func AddPost(post schema.Posts) error {
 	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		return errors.New("internal server error")
 	}
-	post.UserId = userId
 	_, err = handler.Insert("posts", post)
+	if err != nil {
+		return errors.New("nothing found")
+	}
+	return nil
+}
+func UpdatePost(post schema.Posts) error {
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("internal server error")
+	}
+	var oldPost schema.Posts
+	err = handler.FindOne("posts", bson.M{"_id": post.ID, "userId": post.UserId, "status": bson.M{"$in": []string{"Confirmed", "Pending"}}}, bson.M{"createdAt": 1}).Decode(&oldPost)
+
+	if err != nil {
+		return errors.New("nothing found")
+	}
+	post.CreatedAt = oldPost.CreatedAt
+	_, err = handler.Update("posts", bson.M{"_id": post.ID}, bson.M{"$set": post})
+	if err != nil {
+		return errors.New("nothing found")
+	}
+	return nil
+}
+func DeletePost(userId primitive.ObjectID, postId primitive.ObjectID) error {
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("internal server error")
+	}
+	var oldPost schema.Posts
+	err = handler.FindOne("posts", bson.M{"_id": postId, "userId": userId, "status": bson.M{"$in": []string{"Confirmed", "Pending"}}}, bson.M{}).Decode(&oldPost)
+	if err != nil {
+		return errors.New("nothing found")
+	}
+	_, err = handler.Update("posts", bson.M{"_id": postId}, bson.M{"$set": bson.M{"status": "deleted", "updatedAt": time.Now(), "lastAction": "deleted by user"}})
 	if err != nil {
 		return errors.New("nothing found")
 	}

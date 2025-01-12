@@ -72,28 +72,28 @@ func updateSessions(userId primitive.ObjectID, sessions []interface{}) (primitiv
 	}
 	return newSession, nil
 }
-func GetSession(userId primitive.ObjectID, sessionId primitive.ObjectID) (schema.Session, error) {
+func GetSession(userId primitive.ObjectID, sessionId primitive.ObjectID) (schema.Session, bool, error) {
 	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
-		return schema.Session{}, err
+		return schema.Session{}, false, err
 	}
 	var result schema.UserInfo
 	err = handler.FindOne("users", bson.M{"_id": userId, "activeSessions._id": sessionId}, bson.M{"activeSessions.$": 1, "status": 1, "loginInfo.isLocked": 1, "loginInfo.isBanned": 1}).Decode(&result)
 	if err != nil {
-		return schema.Session{}, err
+		return schema.Session{}, false, err
 	}
 	if !result.Status {
 		if result.LoginInfo.IsLocked {
-			return schema.Session{}, errors.New("your account is locked")
+			return schema.Session{}, false, errors.New("your account is locked")
 		}
 		if result.LoginInfo.IsBanned {
-			return schema.Session{}, errors.New("your account is Banned")
+			return schema.Session{}, false, errors.New("your account is Banned")
 		} else {
-			return schema.Session{}, errors.New("your account maybe deleted")
+			return schema.Session{}, false, errors.New("your account maybe deleted")
 		}
 	}
-	return result.ActiveSessions[0], err
+	return result.ActiveSessions[0], result.IsAdmin, err
 }
 func AddToInactiveSessions(userId primitive.ObjectID, sessionInfo schema.Session) error {
 	handler, err := mongodb.GetMongoDBHandler()
