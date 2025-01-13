@@ -46,7 +46,7 @@ func AdminAuthentication() gin.HandlerFunc {
 		}
 		accessToken = strings.TrimPrefix(accessToken, "Bearer ")
 		userId, sessionId, redisId, tokenType, err := jwt.Validate(accessToken)
-		if err != nil || tokenType != "admin-access-token" {
+		if err != nil || tokenType != "access-token" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Access Token"})
 			c.Abort()
 			return

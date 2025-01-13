@@ -18,11 +18,11 @@ type Session struct {
 type Login struct {
 	Username         string `json:"username" form:"username" binding:"required,min=4,max=16" bson:"username"`
 	Password         string `json:"password" form:"password" binding:"required,min=8,max=26" bson:"password"`
-	IsAdmin          bool   `json:"-" form:"-" bson:"isAdmin"`
-	IsVerified       bool   `json:"-" form:"-" bson:"isVerified"`
-	IsLocked         bool   `json:"-" form:"-" bson:"isLocked"`
-	IsBanned         bool   `json:"-" form:"-" bson:"isBanned"`
-	VerificationCode string `json:"-" form:"-" bson:"verificationCode"`
+	IsAdmin          bool   `json:"isAdmin" form:"-" bson:"isAdmin"`
+	IsVerified       bool   `json:"isVerified" form:"-" bson:"isVerified"`
+	IsLocked         bool   `json:"isLocked" form:"-" bson:"isLocked"`
+	IsBanned         bool   `json:"isBanned" form:"-" bson:"isBanned"`
+	VerificationCode string `json:"verificationCode" form:"-" bson:"verificationCode"`
 }
 
 type UserInfo struct {

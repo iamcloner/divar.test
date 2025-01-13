@@ -1,10 +1,9 @@
 package adminApis
 
 import (
-	"divar.ir/internal/mongodb"
+	"divar.ir/api/repositories/adminRepositories"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"net/http"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func IncludeUsers(router *gin.RouterGroup) {
@@ -13,20 +12,43 @@ func IncludeUsers(router *gin.RouterGroup) {
 		usersRouter.GET("/test", func(ctx *gin.Context) { ctx.JSON(200, gin.H{"test": "Cities"}) })
 		usersRouter.GET("/", func(ctx *gin.Context) {
 
-			handler, err := mongodb.GetMongoDBHandler()
-
+			res, err := adminRepositories.GetUsers()
 			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Operation Failed (0x0001)"})
+				ctx.JSON(500, gin.H{"error": err.Error()})
 				return
 			}
+			ctx.JSON(200, gin.H{"users": res})
 
-			result, err := handler.FindMany("cities", bson.M{}, bson.M{"_id": 0})
+		})
+		usersRouter.GET("/:userId", func(ctx *gin.Context) {
+			userId := ctx.Param("userId")
+			userIdObj, err := primitive.ObjectIDFromHex(userId)
 			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Operation Failed (0x0002)"})
+				ctx.JSON(500, gin.H{"error": "Invalid User ID"})
 				return
 			}
+			res, err := adminRepositories.GetUser(userIdObj)
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			ctx.JSON(200, res)
 
-			ctx.JSON(200, result)
+		})
+		usersRouter.GET("/:userId/loginInfo", func(ctx *gin.Context) {
+			userId := ctx.Param("userId")
+			userIdObj, err := primitive.ObjectIDFromHex(userId)
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": "Invalid User ID"})
+				return
+			}
+			res, err := adminRepositories.GetUserLoginInfo(userIdObj)
+			if err != nil {
+				ctx.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			ctx.JSON(200, res)
+
 		})
 	}
 

@@ -18,6 +18,7 @@ func IncludeCategories(router *gin.Engine) {
 			}
 			ctx.JSON(200, result)
 		})
+
 		categoriesRouter.GET("/:code", func(ctx *gin.Context) {
 			code, err := strconv.Atoi(ctx.Param("code"))
 			if err != nil {
