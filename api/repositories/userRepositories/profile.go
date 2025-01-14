@@ -3,6 +3,7 @@ package userRepositories
 import (
 	"divar.ir/internal/email"
 	"divar.ir/internal/mongodb"
+	"divar.ir/internal/password"
 	"divar.ir/internal/redis"
 	"divar.ir/schema"
 	"errors"
@@ -139,5 +140,32 @@ func DeleteProfile(userId primitive.ObjectID) error {
 			fmt.Println(err)
 		}
 	}()
+	return nil
+}
+func CheckOldPassword(userId primitive.ObjectID, oldPassword string) (bool, error) {
+	var result schema.UserInfo
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return false, errors.New("internal server error")
+	}
+	err = handler.FindOne("users", bson.M{"_id": userId}, bson.M{"loginInfo.password": 1}).Decode(&result)
+	if err != nil {
+		return false, errors.New("invalid user id")
+	}
+	return password.Check(oldPassword, result.LoginInfo.Password), nil
+}
+func UpdatePassword(userId primitive.ObjectID, newPassword string) error {
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("internal server error")
+	}
+	newPasswordHash, err := password.Hash(newPassword)
+	if err != nil {
+		return err
+	}
+	_, err = handler.Update("users", bson.M{"_id": userId}, bson.M{"$addToSet": bson.M{"password": newPasswordHash}})
+	if err != nil {
+		return errors.New("invalid user id")
+	}
 	return nil
 }

@@ -54,13 +54,13 @@ func Register(ctx *gin.Context) (map[string]interface{}, error) {
 	registerInfo.LoginInfo.Password = hashedPassword
 	randomNumber := rand.Intn(90000) + 10000
 	registerInfo.LoginInfo.VerificationCode = strconv.Itoa(randomNumber)
+	registerInfo.LoginInfo.IsAdmin = false
 
 	registerInfo.Id = primitive.NewObjectID()
 	registerInfo.RegisterTime = time.Now()
 	registerInfo.ActiveSessions = make([]schema.Session, 0)
 	registerInfo.InactiveSessions = make([]schema.Session, 0)
 	registerInfo.Status = true
-	registerInfo.IsAdmin = false
 
 	registerInfo.Image = "http://divar.test/userImages/defult_user_profile.png"
 	result, err := handler.Insert("users", registerInfo)
@@ -120,16 +120,9 @@ func Login(ctx *gin.Context) (map[string]interface{}, error) {
 		}
 	}
 	var session schema.Session
-	if result.LoginInfo.IsVerified {
-		session, err = jwt.Login(ctx, result.Id.Hex(), true, result.IsAdmin)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		session, err = jwt.Login(ctx, result.Id.Hex(), false, result.IsAdmin)
-		if err != nil {
-			return nil, err
-		}
+	session, err = jwt.Login(ctx, result.Id.Hex(), result.LoginInfo.IsVerified, result.LoginInfo.IsAdmin)
+	if err != nil {
+		return nil, err
 	}
 
 	err = sessions_manager.OpenSession(result.Id, session)
@@ -214,6 +207,10 @@ func Refresh(ctx *gin.Context) (map[string]interface{}, error) {
 	}
 	userIdObj, _ := primitive.ObjectIDFromHex(userId)
 	sessionIdObj, _ := primitive.ObjectIDFromHex(sessionId)
+	_, err = sessions_manager.GetSessions(userIdObj)
+	if err != nil {
+		return nil, errors.New("invalid session")
+	}
 	sessionInfo, isAdmin, err := sessions_manager.GetSession(userIdObj, sessionIdObj)
 	if err != nil {
 		return nil, errors.New("invalid refresh token")

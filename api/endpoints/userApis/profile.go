@@ -26,7 +26,7 @@ func IncludeProfile(router *gin.RouterGroup) {
 			}
 			ctx.JSON(200, profile)
 		})
-		profileRouter.PUT("/updateName", func(ctx *gin.Context) {
+		profileRouter.PATCH("/updateName", func(ctx *gin.Context) {
 
 			userId, exist := ctx.Get("userId")
 			if !exist {
@@ -113,7 +113,7 @@ func IncludeProfile(router *gin.RouterGroup) {
 
 			ctx.JSON(200, "profile")
 		})
-		profileRouter.GET("/delete", func(ctx *gin.Context) {
+		profileRouter.DELETE("/", func(ctx *gin.Context) {
 			userId, exist := ctx.Get("userId")
 			if !exist {
 				ctx.JSON(401, "Authentication Required")
@@ -154,7 +154,44 @@ func IncludeProfile(router *gin.RouterGroup) {
 			}
 			ctx.JSON(200, "successfully deleted.")
 		})
+		profileRouter.PATCH("/updatePassword", func(ctx *gin.Context) {
 
+			userId, exist := ctx.Get("userId")
+			if !exist {
+				ctx.JSON(401, "Authentication Required")
+				return
+			}
+			userIdObj, err := primitive.ObjectIDFromHex(userId.(string))
+			if err != nil {
+				ctx.JSON(401, "Authentication Failed")
+				return
+			}
+			oldPassword, exist := ctx.GetPostForm("oldPassword")
+			if !exist {
+				ctx.JSON(400, "wrong Input")
+				return
+			}
+			newPassword, exist := ctx.GetPostForm("newPassword")
+			if !exist {
+				ctx.JSON(400, "wrong Input")
+				return
+			}
+			check, err := userRepositories.CheckOldPassword(userIdObj, oldPassword)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			if !check {
+				ctx.JSON(400, "wrong Password")
+				return
+			}
+			err = userRepositories.UpdatePassword(userIdObj, newPassword)
+			if err != nil {
+				ctx.JSON(500, err.Error())
+				return
+			}
+			ctx.JSON(200, "password updated successfully.")
+		})
 	}
 
 }

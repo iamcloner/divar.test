@@ -24,21 +24,20 @@ func OpenSession(userId primitive.ObjectID, sessionInfo schema.Session) error {
 	return err
 }
 
-func GetSessions(userId primitive.ObjectID) ([]interface{}, error) {
+func GetSessions(userId primitive.ObjectID) ([]schema.Session, error) {
 	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
-	var result bson.M
+	var result schema.UserInfo
 	err = handler.FindOne("users", bson.M{"_id": userId}, bson.M{"activeSessions": 1}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}
-	sessions, ok := result["activeSessions"].(primitive.A)
-	if !ok {
-		println(ok)
+	sessions, err := updateSessions(userId, result.ActiveSessions)
+	if err != nil {
+		return nil, err
 	}
-	sessions, err = updateSessions(userId, sessions)
 	return sessions, err
 }
 func CloseSession(userId primitive.ObjectID, sessionId primitive.ObjectID) error {
@@ -49,19 +48,18 @@ func CloseSession(userId primitive.ObjectID, sessionId primitive.ObjectID) error
 	_, err = handler.Update("users", bson.M{"_id": userId}, bson.M{"$pull": bson.M{"activeSessions": bson.M{"_id": sessionId}}})
 	return err
 }
-func updateSessions(userId primitive.ObjectID, sessions []interface{}) (primitive.A, error) {
-	var newSession []interface{}
+func updateSessions(userId primitive.ObjectID, sessions []schema.Session) ([]schema.Session, error) {
+	var newSession []schema.Session
 	expRefreshToken, _ := strconv.ParseFloat(os.Getenv("JWT_REF_EXP"), 64)
 	for _, session := range sessions {
-		sessionData, _ := session.(bson.M)
-		openTime := sessionData["lastActivity"].(primitive.DateTime)
-		estTime := time.Now().Sub(openTime.Time()).Hours()
+		openTime := session.OpenTime
+		estTime := time.Now().Sub(openTime).Hours()
 		if estTime >= expRefreshToken {
-			err := CloseSession(userId, sessionData["_id"].(primitive.ObjectID))
+			err := CloseSession(userId, session.ID)
 			if err != nil {
 				return nil, err
 			}
-			err = AddToInactiveSessions(userId, session.(schema.Session))
+			err = AddToInactiveSessions(userId, session)
 			if err != nil {
 				return nil, err
 			}
@@ -79,7 +77,7 @@ func GetSession(userId primitive.ObjectID, sessionId primitive.ObjectID) (schema
 		return schema.Session{}, false, err
 	}
 	var result schema.UserInfo
-	err = handler.FindOne("users", bson.M{"_id": userId, "activeSessions._id": sessionId}, bson.M{"activeSessions.$": 1, "status": 1, "loginInfo.isLocked": 1, "loginInfo.isBanned": 1}).Decode(&result)
+	err = handler.FindOne("users", bson.M{"_id": userId, "activeSessions": bson.M{"$elemMatch": bson.M{"_id": sessionId}}}, bson.M{"activeSessions.$": 1, "status": 1, "loginInfo.isLocked": 1, "loginInfo.isBanned": 1, "loginInfo.isAdmin": 1}).Decode(&result)
 	if err != nil {
 		return schema.Session{}, false, err
 	}
@@ -93,7 +91,7 @@ func GetSession(userId primitive.ObjectID, sessionId primitive.ObjectID) (schema
 			return schema.Session{}, false, errors.New("your account maybe deleted")
 		}
 	}
-	return result.ActiveSessions[0], result.IsAdmin, err
+	return result.ActiveSessions[0], result.LoginInfo.IsAdmin, err
 }
 func AddToInactiveSessions(userId primitive.ObjectID, sessionInfo schema.Session) error {
 	handler, err := mongodb.GetMongoDBHandler()

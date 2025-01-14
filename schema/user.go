@@ -9,10 +9,10 @@ type Session struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty"`
 	AccessToken  string             `json:"-" form:"-" bson:"accessToken"`
 	RefreshToken string             `json:"-" form:"-" bson:"refreshToken"`
-	IP           string             `json:"-" form:"-" bson:"ip"`
-	OpenTime     time.Time          `json:"-" form:"-" bson:"openTime"`
-	Platform     string             `json:"-" form:"-" bson:"platform"`
-	LastActivity time.Time          `json:"-" form:"-" bson:"lastActivity"`
+	IP           string             `json:"ip" form:"-" bson:"ip"`
+	OpenTime     time.Time          `json:"openTime" form:"-" bson:"openTime"`
+	Platform     string             `json:"platform" form:"-" bson:"platform"`
+	LastActivity time.Time          `json:"lastActivity" form:"-" bson:"lastActivity"`
 }
 
 type Login struct {
@@ -30,7 +30,6 @@ type UserInfo struct {
 	Status           bool               `json:"-" form:"-" bson:"status"`
 	Name             string             `json:"name" form:"name" binding:"required,min=5,max=16" bson:"name"`
 	Email            string             `json:"email" form:"email" binding:"required,email" bson:"email"`
-	IsAdmin          bool               `json:"-" form:"-" bson:"isAdmin"`
 	Birthday         time.Time          `json:"birthday" form:"birthday" binding:"required" bson:"birthday"`
 	Address          string             `json:"address" form:"address" binding:"required,min=5,max=60" bson:"address"`
 	Country          string             `json:"country" form:"country" binding:"required,min=3,max=30" bson:"country"`
