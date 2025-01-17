@@ -147,6 +147,17 @@ func IncludeProfile(router *gin.RouterGroup) {
 				ctx.JSON(401, "Authentication Failed")
 				return
 			}
+			posts, err := userRepositories.GetMyPosts(userIdObj)
+			if err != nil {
+				ctx.JSON(401, "failed to delete account")
+				return
+			}
+			for _, post := range posts {
+				err := userRepositories.DeletePost(userIdObj, post.ID)
+				if err != nil {
+					return
+				}
+			}
 			err = userRepositories.ConfirmDeleteProfile(userIdObj, verifyCode)
 			if err != nil {
 				ctx.JSON(500, err.Error())

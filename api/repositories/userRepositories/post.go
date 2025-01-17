@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func GetMyPosts(userId primitive.ObjectID) (posts []bson.M, err error) {
+func GetMyPosts(userId primitive.ObjectID) ([]schema.Posts, error) {
 	handler, err := mongodb.GetMongoDBHandler()
 	if err != nil {
 		return nil, errors.New("internal server error")
@@ -18,7 +18,13 @@ func GetMyPosts(userId primitive.ObjectID) (posts []bson.M, err error) {
 	if err != nil {
 		return nil, errors.New("nothing found")
 	}
-	return result, nil
+	var posts []schema.Posts
+	bsonBytes, _ := bson.Marshal(result)
+	err = bson.Unmarshal(bsonBytes, &posts)
+	if err != nil {
+		return nil, errors.New("error getting posts")
+	}
+	return posts, nil
 }
 func AddPost(post schema.Posts) error {
 	handler, err := mongodb.GetMongoDBHandler()

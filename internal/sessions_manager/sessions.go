@@ -3,7 +3,6 @@ package sessions_manager
 import (
 	"divar.ir/internal/mongodb"
 	"divar.ir/schema"
-	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
@@ -81,16 +80,7 @@ func GetSession(userId primitive.ObjectID, sessionId primitive.ObjectID) (schema
 	if err != nil {
 		return schema.Session{}, false, err
 	}
-	if !result.Status {
-		if result.LoginInfo.IsLocked {
-			return schema.Session{}, false, errors.New("your account is locked")
-		}
-		if result.LoginInfo.IsBanned {
-			return schema.Session{}, false, errors.New("your account is Banned")
-		} else {
-			return schema.Session{}, false, errors.New("your account maybe deleted")
-		}
-	}
+
 	return result.ActiveSessions[0], result.LoginInfo.IsAdmin, err
 }
 func AddToInactiveSessions(userId primitive.ObjectID, sessionInfo schema.Session) error {

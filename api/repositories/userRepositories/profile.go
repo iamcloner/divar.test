@@ -111,7 +111,7 @@ func ConfirmDeleteProfile(userId primitive.ObjectID, verifyCode string) error {
 	if err != nil {
 		return errors.New("internal server error")
 	}
-	_, err = handler.Delete("users", bson.M{"_id": userId})
+	_, err = handler.Update("users", bson.M{"_id": userId}, bson.M{"status": false})
 	if err != nil {
 		return errors.New("delete account failed")
 	}

@@ -36,12 +36,12 @@ func Register(ctx *gin.Context) (map[string]interface{}, error) {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 	var existUser schema.UserInfo
-	err = handler.FindOne("users", bson.M{"email": registerInfo.Email}, bson.M{}).Decode(&existUser)
+	err = handler.FindOne("users", bson.M{"email": registerInfo.Email, "status": true}, bson.M{}).Decode(&existUser)
 	if !errors.Is(err, mongo.ErrNoDocuments) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Email already exist", "status": false})
 		return nil, errors.New("email already exist")
 	}
-	err = handler.FindOne("users", bson.M{"loginInfo.username": registerInfo.LoginInfo.Username}, bson.M{}).Decode(&existUser)
+	err = handler.FindOne("users", bson.M{"loginInfo.username": registerInfo.LoginInfo.Username, "status": true}, bson.M{}).Decode(&existUser)
 	if !errors.Is(err, mongo.ErrNoDocuments) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Username already exist", "status": false})
 		return nil, errors.New("username already exist")
@@ -110,14 +110,13 @@ func Login(ctx *gin.Context) (map[string]interface{}, error) {
 		return nil, err
 	}
 	if !result.Status {
-		if result.LoginInfo.IsLocked {
-			return nil, errors.New("your account is locked")
-		}
-		if result.LoginInfo.IsBanned {
-			return nil, errors.New("your account is Banned")
-		} else {
-			return nil, errors.New("your account maybe deleted")
-		}
+		return nil, errors.New("your account maybe deleted")
+	}
+	if result.LoginInfo.IsLocked {
+		return nil, errors.New("your account is locked")
+	}
+	if result.LoginInfo.IsBanned {
+		return nil, errors.New("your account is Banned")
 	}
 	var session schema.Session
 	session, err = jwt.Login(ctx, result.Id.Hex(), result.LoginInfo.IsVerified, result.LoginInfo.IsAdmin)
@@ -177,9 +176,9 @@ func Verify(ctx *gin.Context) (gin.H, error) {
 	if result.LoginInfo.VerificationCode != verifyCode {
 		return nil, errors.New("invalid verify code")
 	}
-	_, err = handler.Update("users", bson.M{"_id": userIdObj}, bson.M{"$set": bson.M{"loginInfo.isVerified": true}})
+	err = VerifyUser(result.Id)
 	if err != nil {
-		return nil, errors.New("verification failed")
+		return nil, err
 	}
 	err = sessions_manager.CloseSession(userIdObj, sessionIdObj)
 	if err != nil {
@@ -270,6 +269,17 @@ func Logout(ctx *gin.Context) error {
 	}
 	if err != nil {
 		return errors.New("logout failed")
+	}
+	return nil
+}
+func VerifyUser(userId primitive.ObjectID) error {
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("server error")
+	}
+	_, err = handler.Update("users", bson.M{"_id": userId}, bson.M{"$set": bson.M{"loginInfo.isVerified": true}})
+	if err != nil {
+		return errors.New("verification failed")
 	}
 	return nil
 }

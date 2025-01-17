@@ -69,3 +69,97 @@ func GetUserInactiveSession(userId primitive.ObjectID) ([]schema.Session, error)
 	}
 	return result.InactiveSessions, err
 }
+func PromoteToAdmin(userId primitive.ObjectID) error {
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("server error")
+	}
+	_, err = handler.Update("users", bson.M{"_id": userId}, bson.M{"$set": bson.M{"loginInfo.isAdmin": true}})
+	if err != nil {
+		return errors.New("failed to promote to admin")
+	}
+	return nil
+}
+func LockUser(userId primitive.ObjectID) error {
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("server error")
+	}
+	_, err = handler.Update("users", bson.M{"_id": userId}, bson.M{"$set": bson.M{"loginInfo.isLocked": true}})
+	if err != nil {
+		return errors.New("failed to lock user")
+	}
+	return nil
+}
+func UnlockUser(userId primitive.ObjectID) error {
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("server error")
+	}
+	_, err = handler.Update("users", bson.M{"_id": userId}, bson.M{"$set": bson.M{"loginInfo.isLocked": false}})
+	if err != nil {
+		return errors.New("failed to lock user")
+	}
+	return nil
+}
+func BanUser(userId primitive.ObjectID) error {
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("server error")
+	}
+	_, err = handler.Update("posts", bson.M{"userId": userId, "status": "Confirmed"}, bson.M{"$set": bson.M{"status": "Ban/Confirmed"}})
+	_, err = handler.Update("posts", bson.M{"userId": userId, "status": "Pending"}, bson.M{"$set": bson.M{"status": "Ban/Pending"}})
+	_, err = handler.Update("users", bson.M{"_id": userId}, bson.M{"$set": bson.M{"loginInfo.isBanned": true}})
+	if err != nil {
+		return errors.New("failed to ban user")
+	}
+	return nil
+}
+func UnbanUser(userId primitive.ObjectID) error {
+	handler, err := mongodb.GetMongoDBHandler()
+	if err != nil {
+		return errors.New("server error")
+	}
+	_, err = handler.Update("posts", bson.M{"userId": userId, "status": "Ban/Confirmed"}, bson.M{"$set": bson.M{"status": "Confirmed"}})
+	_, err = handler.Update("posts", bson.M{"userId": userId, "status": "Ban/Pending"}, bson.M{"$set": bson.M{"status": "Pending"}})
+	_, err = handler.Update("users", bson.M{"_id": userId}, bson.M{"$set": bson.M{"loginInfo.isBanned": false}})
+	if err != nil {
+		return errors.New("failed to lock user")
+	}
+	return nil
+}
+func TerminateUserSession(userId primitive.ObjectID, sessionId primitive.ObjectID) error {
+	session, admin, err := sessions_manager.GetSession(userId, sessionId)
+	if err != nil {
+		return err
+	}
+	if admin {
+		return errors.New("cannot terminate admin session")
+	}
+	err = sessions_manager.CloseSession(userId, sessionId)
+	if err != nil {
+		return err
+	}
+	err = sessions_manager.AddToInactiveSessions(userId, session)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func TerminateAllSessionUser(userId primitive.ObjectID) error {
+	sessions, err := sessions_manager.GetSessions(userId)
+	if err != nil {
+		return err
+	}
+	for _, session := range sessions {
+		err = sessions_manager.CloseSession(userId, session.ID)
+		if err != nil {
+			return err
+		}
+		err = sessions_manager.AddToInactiveSessions(userId, session)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
